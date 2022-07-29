@@ -1,4 +1,5 @@
 import { createRouter, createWebHashHistory } from "vue-router";
+import isAuthenticatedGuard from "./auth-guard";
 
 // import ListPage from "@/modules/pokemon/pages/ListPage";
 // import AboutPage from "@/modules/pokemon/pages/AboutPage";
@@ -8,37 +9,82 @@ import { createRouter, createWebHashHistory } from "vue-router";
 
 const routes = [
   {
-    path:  '/',
-    redirect:'/home'
+    path: "/",
+    redirect: "/pokemon",
   },
   {
-    path: "/home",
-    name: 'home',
+    path: "/pokemon",
+    name: "pokemon",
     component: () =>
       import(
-        /*webpackChunkName: "ListPage"*/ "@/modules/pokemon/pages/ListPage"
+        /*webpackChunkName: "PokemonLayout" */ "@/modules/pokemon/layouts/PokemonLayout"
       ),
+    children: [
+      {
+        path: "home",
+        name: "pokemon-home",
+        component: () =>
+          import(
+            /*webpackChunkName: "ListPage"*/ "@/modules/pokemon/pages/ListPage"
+          ),
+      },
+      {
+        path: "about",
+        name: "pokemon-about",
+        component: () =>
+          import(
+            /*webpackChunkName: "AboutPage"*/ "@/modules/pokemon/pages/AboutPage"
+          ),
+      },
+      {
+        path: "pokemonid/:pokeid",
+        name: "pokemon-id",
+        component: () =>
+          import(
+            /*webpackChunkName: "PokemonPage"*/ "@/modules/pokemon/pages/PokemonPage"
+          ),
+        props: (route) => {
+          const { pokeid } = route.params;
+          const id = Number(pokeid);
+          return isNaN(id) ? { pokeid: 1 } : { pokeid: id };
+        },
+      },
+      {
+        path: "",
+        redirect: { name: "pokemon-about" },
+      },
+    ],
   },
   {
-    path: "/about",
-    name: 'about',
+    path: "/dbz",
+    name: "dbz",
+    beforeEnter : [ isAuthenticatedGuard ],
     component: () =>
       import(
-        /*webpackChunkName: "AboutPage"*/ "@/modules/pokemon/pages/AboutPage"
+        /*webpackChunkName:"DBZLayout"*/ "@/modules/dbz/layouts/DragonBallLayout"
       ),
-  },
-  {
-    path: "/pokemonid/:pokeid",
-    name: "pokemon-id",
-    component: () =>
-      import(
-        /*webpackChunkName: "PokemonPage"*/ "@/modules/pokemon/pages/PokemonPage"
-      ),
-    props: (route) => {
-      const { pokeid } = route.params;
-      const id = Number(pokeid);
-      return isNaN(id) ? { pokeid: 1 } : { pokeid: id };
-    },
+    children: [
+      {
+        path: "characters",
+        name: "dbz-characters",
+        beforeEnter : [ isAuthenticatedGuard ],
+        component: () =>
+          import(
+            /*webpackChunkName:"DBZCharacters"*/ "@/modules/dbz/pages/Characters"
+          ),
+      },
+      {
+        path: "about",
+        name: "dbz-about",
+        beforeEnter : [ isAuthenticatedGuard ],
+        component: () =>
+          import(/*webpackChunkName:"DBZAbout"*/ "@/modules/dbz/pages/About"),
+      },
+      {
+        path: "",
+        redirect: { name: "dbz-characters" },
+      },
+    ],
   },
   {
     path: "/:pathMatch(.*)*",
@@ -58,5 +104,39 @@ const router = createRouter({
   history: createWebHashHistory(),
   routes, // short for `routes: routes`
 });
+
+// Guard Global - Sincrono
+// router.beforeEach((to,from,next)=> {
+//   console.log({to,from,next})
+
+//   const random = Math.random() * 100
+//   if(random > 50){
+//     console.log('autenticado')
+//     next()
+//   }else{
+//     console.log(random, 'bloquedo por el beforeEach Guard')
+//     next({name: 'pokemon-home'})
+
+//   }
+// })
+
+//Guard global asíncono
+// const canAccess = () => {
+//   return new Promise((resolve) => {
+//     const random = Math.random() * 100;
+//     if (random > 50) {
+//       console.log("autenticado - canAccess")
+//       resolve(true)
+//     } else {
+//       console.log(random, "bloquedo por el beforeEach Guard - caAccess")
+//       resolve(false)
+//     }
+//   });
+// };
+
+// router.beforeEach(async(to,from,next)=>{
+//   const authorized = await canAccess(to,from,next)
+//   authorized ? next() : next({name: 'pokemon-home'})
+// })
 
 export default router;
